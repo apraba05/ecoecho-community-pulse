@@ -1,18 +1,20 @@
-
 import React, { useState } from 'react';
-import { Leaf, Users, Calendar, Plus, Share2, Trophy, Target } from 'lucide-react';
+import { Leaf, Users, Calendar, Plus, Share2, Trophy, Target, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useEcoActions } from '@/hooks/useEcoActions';
+import { useNavigate } from 'react-router-dom';
 
 interface EcoAction {
   id: string;
-  title: string;
-  impact: number;
-  date: string;
+  action_description: string;
+  action_date: string;
+  impact_score: number;
   category: 'transport' | 'energy' | 'waste' | 'water';
 }
 
@@ -24,13 +26,12 @@ interface Friend {
 }
 
 const Index = () => {
-  const [ecoActions, setEcoActions] = useState<EcoAction[]>([
-    { id: '1', title: 'Biked to work', impact: 5, date: '2024-06-14', category: 'transport' },
-    { id: '2', title: 'Used reusable water bottle', impact: 3, date: '2024-06-13', category: 'waste' },
-    { id: '3', title: 'Turned off lights', impact: 2, date: '2024-06-13', category: 'energy' },
-  ]);
-
-  const [friends, setFriends] = useState<Friend[]>([
+  const { user, signOut } = useAuth();
+  const { ecoActions, addEcoAction } = useEcoActions();
+  const navigate = useNavigate();
+  
+  // Mock friends data (can be moved to Supabase later)
+  const [friends] = useState([
     { id: '1', name: 'Alex Green', points: 127, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face' },
     { id: '2', name: 'Sarah Earth', points: 95, avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face' },
     { id: '3', name: 'Mike Forest', points: 88, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face' },
@@ -41,27 +42,26 @@ const Index = () => {
   const [showAddAction, setShowAddAction] = useState(false);
   const [showInviteFriend, setShowInviteFriend] = useState(false);
 
-  const totalPoints = ecoActions.reduce((sum, action) => sum + action.impact, 0);
+  // Redirect to auth if not logged in
+  React.useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+
+  if (!user) {
+    return null; // Will redirect to auth
+  }
+
+  const totalPoints = ecoActions.reduce((sum, action) => sum + action.impact_score, 0);
   const communityImpact = totalPoints + friends.reduce((sum, friend) => sum + friend.points, 0);
 
-  const addEcoAction = () => {
+  const handleAddAction = async () => {
     if (!newActionTitle.trim()) return;
     
-    const newAction: EcoAction = {
-      id: Date.now().toString(),
-      title: newActionTitle,
-      impact: Math.floor(Math.random() * 5) + 1,
-      date: new Date().toISOString().split('T')[0],
-      category: 'transport'
-    };
-    
-    setEcoActions([newAction, ...ecoActions]);
+    await addEcoAction(newActionTitle);
     setNewActionTitle('');
     setShowAddAction(false);
-    toast({
-      title: "Action logged!",
-      description: `You earned ${newAction.impact} eco points!`,
-    });
   };
 
   const inviteFriend = () => {
@@ -73,6 +73,11 @@ const Index = () => {
       title: "Invitation sent!",
       description: `Invite sent to ${inviteEmail}`,
     });
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
   };
 
   const getCategoryColor = (category: string) => {
@@ -97,7 +102,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">EcoEcho</h1>
-                <p className="text-sm text-gray-600">Your sustainability journey</p>
+                <p className="text-sm text-gray-600">Welcome back, {user.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -105,6 +110,15 @@ const Index = () => {
                 <Trophy className="w-4 h-4 mr-1" />
                 {totalPoints} points
               </Badge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleSignOut}
+                className="border-eco-300 text-eco-700 hover:bg-eco-50"
+              >
+                <LogOut className="w-4 h-4 mr-1" />
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>
@@ -208,10 +222,10 @@ const Index = () => {
                         placeholder="e.g., Used public transport"
                         value={newActionTitle}
                         onChange={(e) => setNewActionTitle(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && addEcoAction()}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAddAction()}
                       />
                       <div className="flex space-x-2">
-                        <Button onClick={addEcoAction} className="flex-1 bg-eco-gradient hover:bg-eco-700">
+                        <Button onClick={handleAddAction} className="flex-1 bg-eco-gradient hover:bg-eco-700">
                           Log Action
                         </Button>
                         <Button variant="outline" onClick={() => setShowAddAction(false)}>
@@ -234,14 +248,14 @@ const Index = () => {
                   ecoActions.map((action) => (
                     <div key={action.id} className="flex items-center justify-between p-3 bg-eco-50 rounded-lg hover:bg-eco-100 transition-colors">
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{action.title}</p>
-                        <p className="text-sm text-gray-600">{action.date}</p>
+                        <p className="font-medium text-gray-900">{action.action_description}</p>
+                        <p className="text-sm text-gray-600">{action.action_date}</p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge className={getCategoryColor(action.category)}>
-                          {action.category}
+                        <Badge className="bg-green-100 text-green-800">
+                          eco
                         </Badge>
-                        <span className="font-semibold text-eco-600">+{action.impact}</span>
+                        <span className="font-semibold text-eco-600">+{action.impact_score}</span>
                       </div>
                     </div>
                   ))

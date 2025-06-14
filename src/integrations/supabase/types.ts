@@ -9,7 +9,63 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      eco_actions: {
+        Row: {
+          action_date: string
+          action_description: string
+          created_at: string
+          friend_invites: number | null
+          id: string
+          impact_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_date?: string
+          action_description: string
+          created_at?: string
+          friend_invites?: number | null
+          id?: string
+          impact_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_date?: string
+          action_description?: string
+          created_at?: string
+          friend_invites?: number | null
+          id?: string
+          impact_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
