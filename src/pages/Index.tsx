@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Leaf, Users, Calendar, Plus, Share2, Trophy, Target } from 'lucide-react';
+import { Leaf, Users, Calendar, Share2, Trophy, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEcoActions } from '@/hooks/useEcoActions';
+import EcoActionInput from '@/components/EcoActionInput';
 
 interface Friend {
   id: string;
@@ -19,7 +20,7 @@ interface Friend {
 
 const Index = () => {
   const { user } = useAuth();
-  const { ecoActions, addEcoAction } = useEcoActions();
+  const { ecoActions, addEcoAction, loading } = useEcoActions();
   
   // Mock friends data (can be moved to Supabase later)
   const [friends] = useState([
@@ -28,21 +29,11 @@ const Index = () => {
     { id: '3', name: 'Mike Forest', points: 88, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face' },
   ]);
 
-  const [newActionTitle, setNewActionTitle] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [showAddAction, setShowAddAction] = useState(false);
   const [showInviteFriend, setShowInviteFriend] = useState(false);
 
   const totalPoints = ecoActions.reduce((sum, action) => sum + action.impact_score, 0);
   const communityImpact = totalPoints + friends.reduce((sum, friend) => sum + friend.points, 0);
-
-  const handleAddAction = async () => {
-    if (!newActionTitle.trim()) return;
-    
-    await addEcoAction(newActionTitle);
-    setNewActionTitle('');
-    setShowAddAction(false);
-  };
 
   const inviteFriend = () => {
     if (!inviteEmail.trim()) return;
@@ -148,77 +139,59 @@ const Index = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Eco Actions */}
-          <Card className="animate-scale-in border-eco-200 shadow-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Calendar className="w-5 h-5 text-eco-600" />
-                    <span>Recent Actions</span>
-                  </CardTitle>
-                  <CardDescription>Track your daily eco-friendly activities</CardDescription>
+          {/* Enhanced Eco Action Input */}
+          <div className="space-y-6">
+            <EcoActionInput onSubmit={addEcoAction} />
+            
+            {/* Recent Actions */}
+            <Card className="animate-scale-in border-eco-200 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Calendar className="w-5 h-5 text-eco-600" />
+                  <span>Recent Actions</span>
+                </CardTitle>
+                <CardDescription>Your latest eco-friendly activities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {ecoActions.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Leaf className="w-12 h-12 mx-auto mb-3 text-eco-300" />
+                      <p>No actions logged yet. Start your journey!</p>
+                    </div>
+                  ) : (
+                    ecoActions.map((action) => (
+                      <div key={action.id} className="flex items-center justify-between p-3 bg-eco-50 rounded-lg hover:bg-eco-100 transition-colors">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{action.action_description}</p>
+                          <p className="text-sm text-gray-600">{action.action_date}</p>
+                          {/* Show attachment indicators */}
+                          <div className="flex gap-2 mt-1">
+                            {action.photo_url && (
+                              <Badge variant="outline" className="text-xs">
+                                📸 Photo
+                              </Badge>
+                            )}
+                            {action.audio_url && (
+                              <Badge variant="outline" className="text-xs">
+                                🎵 Voice
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge className="bg-green-100 text-green-800">
+                            eco
+                          </Badge>
+                          <span className="font-semibold text-eco-600">+{action.impact_score}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-                <Dialog open={showAddAction} onOpenChange={setShowAddAction}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="bg-eco-gradient hover:bg-eco-700 text-white">
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add Action
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Log Eco Action</DialogTitle>
-                      <DialogDescription>
-                        What sustainable action did you take today?
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <Input
-                        placeholder="e.g., Used public transport"
-                        value={newActionTitle}
-                        onChange={(e) => setNewActionTitle(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddAction()}
-                      />
-                      <div className="flex space-x-2">
-                        <Button onClick={handleAddAction} className="flex-1 bg-eco-gradient hover:bg-eco-700">
-                          Log Action
-                        </Button>
-                        <Button variant="outline" onClick={() => setShowAddAction(false)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {ecoActions.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Leaf className="w-12 h-12 mx-auto mb-3 text-eco-300" />
-                    <p>No actions logged yet. Start your journey!</p>
-                  </div>
-                ) : (
-                  ecoActions.map((action) => (
-                    <div key={action.id} className="flex items-center justify-between p-3 bg-eco-50 rounded-lg hover:bg-eco-100 transition-colors">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{action.action_description}</p>
-                        <p className="text-sm text-gray-600">{action.action_date}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge className="bg-green-100 text-green-800">
-                          eco
-                        </Badge>
-                        <span className="font-semibold text-eco-600">+{action.impact_score}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Friends & Community */}
           <Card className="animate-scale-in border-eco-200 shadow-sm">
@@ -313,38 +286,6 @@ const Index = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-12 text-center">
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-eco-200">
-            <div className="max-w-2xl mx-auto">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Together We Can Make a Difference
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Every small action counts towards a more sustainable future. 
-                Track your progress, inspire friends, and be part of a community that cares.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  className="bg-eco-gradient hover:bg-eco-700 text-white"
-                  onClick={() => setShowAddAction(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Log Your First Action
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="border-eco-300 text-eco-700 hover:bg-eco-50"
-                  onClick={() => setShowInviteFriend(true)}
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Invite Friends
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

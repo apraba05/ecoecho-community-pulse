@@ -45,7 +45,6 @@ const defaultUser: User = {
   email_change_sent_at: null,
   new_phone: null,
   phone_confirmed_at: null,
-  email_change_confirm_status: 0,
   banned_until: null,
   identities: []
 };
