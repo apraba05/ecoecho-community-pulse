@@ -120,8 +120,8 @@ export const useEcoActions = () => {
 
       if (error) throw error;
 
-      // Add to local state
-      setEcoActions([data, ...ecoActions]);
+      // Add to local state immediately for instant UI update
+      setEcoActions(prevActions => [data, ...prevActions]);
 
       let attachmentText = '';
       if (actionInput.photo && actionInput.audioBlob) {
@@ -150,6 +150,39 @@ export const useEcoActions = () => {
 
   useEffect(() => {
     fetchEcoActions();
+  }, [user]);
+
+  // Set up real-time subscription for new actions
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('eco_actions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'eco_actions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('New eco action received:', payload);
+          // Only add if it's not already in the list (to avoid duplicates from our manual addition)
+          setEcoActions(prevActions => {
+            const exists = prevActions.some(action => action.id === payload.new.id);
+            if (!exists) {
+              return [payload.new as EcoAction, ...prevActions];
+            }
+            return prevActions;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {

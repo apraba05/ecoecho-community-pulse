@@ -1,13 +1,16 @@
 
-import React, { createContext, useContext, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+interface User {
+  id: string;
+  email: string;
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -21,72 +24,51 @@ export const useAuth = () => {
   return context;
 };
 
-// Default user for development
-const defaultUser: User = {
-  id: 'default-user-id',
-  email: 'demo@ecoecho.com',
-  user_metadata: {
-    full_name: 'Demo User'
-  },
-  app_metadata: {},
-  aud: 'authenticated',
-  created_at: new Date().toISOString(),
-  role: 'authenticated',
-  updated_at: new Date().toISOString(),
-  email_confirmed_at: new Date().toISOString(),
-  last_sign_in_at: new Date().toISOString(),
-  phone: null,
-  confirmation_sent_at: null,
-  confirmed_at: new Date().toISOString(),
-  recovery_sent_at: null,
-  new_email: null,
-  invited_at: null,
-  action_link: null,
-  email_change_sent_at: null,
-  new_phone: null,
-  phone_confirmed_at: null,
-  identities: []
-};
-
-const defaultSession: Session = {
-  access_token: 'default-access-token',
-  refresh_token: 'default-refresh-token',
-  expires_in: 3600,
-  expires_at: Date.now() / 1000 + 3600,
-  token_type: 'bearer',
-  user: defaultUser
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user] = useState<User | null>(defaultUser);
-  const [session] = useState<Session | null>(defaultSession);
-  const [loading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
-    // Mock function for now
-    return { error: null };
-  };
+  useEffect(() => {
+    // For demo purposes, we'll use a valid UUID format
+    const demoUser: User = {
+      id: '550e8400-e29b-41d4-a716-446655440000', // Valid UUID format
+      email: 'demo@ecoecho.com'
+    };
+    
+    setUser(demoUser);
+    setLoading(false);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
-    // Mock function for now
-    return { error: null };
+    // Mock sign in
+    const demoUser: User = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      email: email
+    };
+    setUser(demoUser);
+  };
+
+  const signUp = async (email: string, password: string) => {
+    // Mock sign up
+    const demoUser: User = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      email: email
+    };
+    setUser(demoUser);
   };
 
   const signOut = async () => {
-    // Mock function for now
-  };
-
-  const value = {
-    user,
-    session,
-    loading,
-    signUp,
-    signIn,
-    signOut
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      signIn,
+      signUp,
+      signOut
+    }}>
       {children}
     </AuthContext.Provider>
   );
