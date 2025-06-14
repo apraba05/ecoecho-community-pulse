@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Leaf, Users, Calendar, Plus, Share2, Trophy, Target, LogOut } from 'lucide-react';
+import { Leaf, Users, Calendar, Plus, Share2, Trophy, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,15 +9,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEcoActions } from '@/hooks/useEcoActions';
-import { useNavigate } from 'react-router-dom';
-
-interface EcoAction {
-  id: string;
-  action_description: string;
-  action_date: string;
-  impact_score: number;
-  category: 'transport' | 'energy' | 'waste' | 'water';
-}
 
 interface Friend {
   id: string;
@@ -26,9 +18,8 @@ interface Friend {
 }
 
 const Index = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { ecoActions, addEcoAction } = useEcoActions();
-  const navigate = useNavigate();
   
   // Mock friends data (can be moved to Supabase later)
   const [friends] = useState([
@@ -41,17 +32,6 @@ const Index = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [showAddAction, setShowAddAction] = useState(false);
   const [showInviteFriend, setShowInviteFriend] = useState(false);
-
-  // Redirect to auth if not logged in
-  React.useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-    }
-  }, [user, navigate]);
-
-  if (!user) {
-    return null; // Will redirect to auth
-  }
 
   const totalPoints = ecoActions.reduce((sum, action) => sum + action.impact_score, 0);
   const communityImpact = totalPoints + friends.reduce((sum, friend) => sum + friend.points, 0);
@@ -75,21 +55,6 @@ const Index = () => {
     });
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      transport: 'bg-blue-100 text-blue-800',
-      energy: 'bg-yellow-100 text-yellow-800',
-      waste: 'bg-green-100 text-green-800',
-      water: 'bg-cyan-100 text-cyan-800'
-    };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-eco-50 via-white to-eco-100">
       {/* Header */}
@@ -102,7 +67,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">EcoEcho</h1>
-                <p className="text-sm text-gray-600">Welcome back, {user.email}</p>
+                <p className="text-sm text-gray-600">Welcome back, {user?.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -110,15 +75,6 @@ const Index = () => {
                 <Trophy className="w-4 h-4 mr-1" />
                 {totalPoints} points
               </Badge>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleSignOut}
-                className="border-eco-300 text-eco-700 hover:bg-eco-50"
-              >
-                <LogOut className="w-4 h-4 mr-1" />
-                Sign Out
-              </Button>
             </div>
           </div>
         </div>

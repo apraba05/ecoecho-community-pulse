@@ -1,7 +1,6 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   user: User | null;
@@ -22,57 +21,62 @@ export const useAuth = () => {
   return context;
 };
 
+// Default user for development
+const defaultUser: User = {
+  id: 'default-user-id',
+  email: 'demo@ecoecho.com',
+  user_metadata: {
+    full_name: 'Demo User'
+  },
+  app_metadata: {},
+  aud: 'authenticated',
+  created_at: new Date().toISOString(),
+  role: 'authenticated',
+  updated_at: new Date().toISOString(),
+  email_confirmed_at: new Date().toISOString(),
+  last_sign_in_at: new Date().toISOString(),
+  phone: null,
+  confirmation_sent_at: null,
+  confirmed_at: new Date().toISOString(),
+  recovery_sent_at: null,
+  new_email: null,
+  invited_at: null,
+  action_link: null,
+  email_change_sent_at: null,
+  new_phone: null,
+  phone_change_sent_at: null,
+  phone_confirmed_at: null,
+  email_change_confirm_status: 0,
+  banned_until: null,
+  identities: []
+};
+
+const defaultSession: Session = {
+  access_token: 'default-access-token',
+  refresh_token: 'default-refresh-token',
+  expires_in: 3600,
+  expires_at: Date.now() / 1000 + 3600,
+  token_type: 'bearer',
+  user: defaultUser
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const [user] = useState<User | null>(defaultUser);
+  const [session] = useState<Session | null>(defaultSession);
+  const [loading] = useState(false);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName
-        }
-      }
-    });
-    return { error };
+    // Mock function for now
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    return { error };
+    // Mock function for now
+    return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Mock function for now
   };
 
   const value = {
