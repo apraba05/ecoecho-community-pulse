@@ -44,7 +44,6 @@ const defaultUser: User = {
   action_link: null,
   email_change_sent_at: null,
   new_phone: null,
-  phone_change_sent_at: null,
   phone_confirmed_at: null,
   email_change_confirm_status: 0,
   banned_until: null,
