@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Leaf, Users, Calendar, Share2, Trophy, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEcoActions } from '@/hooks/useEcoActions';
 import EcoActionInput from '@/components/EcoActionInput';
+import EcoAssistant from '@/components/EcoAssistant';
 
 interface Friend {
   id: string;
@@ -139,7 +139,7 @@ const Index = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Enhanced Eco Action Input */}
+          {/* Left Column - Eco Action Input and Recent Actions */}
           <div className="space-y-6">
             <EcoActionInput onSubmit={addEcoAction} />
             
@@ -215,99 +215,105 @@ const Index = () => {
             </Card>
           </div>
 
-          {/* Friends & Community */}
-          <Card className="animate-scale-in border-eco-200 shadow-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Users className="w-5 h-5 text-eco-600" />
-                    <span>Eco Friends</span>
-                  </CardTitle>
-                  <CardDescription>Build your sustainability network</CardDescription>
-                </div>
-                <Dialog open={showInviteFriend} onOpenChange={setShowInviteFriend}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="outline" className="border-eco-300 text-eco-700 hover:bg-eco-50">
-                      <Share2 className="w-4 h-4 mr-1" />
-                      Invite
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Invite a Friend</DialogTitle>
-                      <DialogDescription>
-                        Share EcoEcho with someone who cares about the environment!
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <Input
-                        type="email"
-                        placeholder="friend@example.com"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && inviteFriend()}
-                      />
-                      <div className="flex space-x-2">
-                        <Button onClick={inviteFriend} className="flex-1 bg-eco-gradient hover:bg-eco-700">
-                          Send Invite
-                        </Button>
-                        <Button variant="outline" onClick={() => setShowInviteFriend(false)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {friends.map((friend, index) => (
-                  <div key={friend.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-eco-200 hover:border-eco-300 transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <img
-                          src={friend.avatar}
-                          alt={friend.name}
-                          className="w-10 h-10 rounded-full"
+          {/* Right Column - Eco Assistant and Friends */}
+          <div className="space-y-6">
+            {/* Eco Assistant */}
+            <EcoAssistant />
+            
+            {/* Friends & Community */}
+            <Card className="animate-scale-in border-eco-200 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Users className="w-5 h-5 text-eco-600" />
+                      <span>Eco Friends</span>
+                    </CardTitle>
+                    <CardDescription>Build your sustainability network</CardDescription>
+                  </div>
+                  <Dialog open={showInviteFriend} onOpenChange={setShowInviteFriend}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="border-eco-300 text-eco-700 hover:bg-eco-50">
+                        <Share2 className="w-4 h-4 mr-1" />
+                        Invite
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Invite a Friend</DialogTitle>
+                        <DialogDescription>
+                          Share EcoEcho with someone who cares about the environment!
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Input
+                          type="email"
+                          placeholder="friend@example.com"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && inviteFriend()}
                         />
-                        {index === 0 && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
-                            <span className="text-xs">👑</span>
-                          </div>
-                        )}
+                        <div className="flex space-x-2">
+                          <Button onClick={inviteFriend} className="flex-1 bg-eco-gradient hover:bg-eco-700">
+                            Send Invite
+                          </Button>
+                          <Button variant="outline" onClick={() => setShowInviteFriend(false)}>
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{friend.name}</p>
-                        <p className="text-sm text-gray-600">Eco warrior</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-eco-600">{friend.points}</p>
-                      <p className="text-xs text-gray-500">points</p>
-                    </div>
-                  </div>
-                ))}
-                
-                <div className="mt-6 p-4 bg-gradient-to-r from-eco-100 to-eco-200 rounded-lg">
-                  <h4 className="font-semibold text-eco-800 mb-2">Community Challenge</h4>
-                  <p className="text-sm text-eco-700 mb-3">
-                    Plant 1,000 virtual trees together! 🌳
-                  </p>
-                  <div className="bg-white rounded-full h-3 mb-2">
-                    <div 
-                      className="bg-eco-gradient h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min((communityImpact / 1000) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-eco-600 font-medium">
-                    {communityImpact}/1000 trees planted
-                  </p>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {friends.map((friend, index) => (
+                    <div key={friend.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-eco-200 hover:border-eco-300 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <div className="relative">
+                          <img
+                            src={friend.avatar}
+                            alt={friend.name}
+                            className="w-10 h-10 rounded-full"
+                          />
+                          {index === 0 && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+                              <span className="text-xs">👑</span>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{friend.name}</p>
+                          <p className="text-sm text-gray-600">Eco warrior</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-eco-600">{friend.points}</p>
+                        <p className="text-xs text-gray-500">points</p>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="mt-6 p-4 bg-gradient-to-r from-eco-100 to-eco-200 rounded-lg">
+                    <h4 className="font-semibold text-eco-800 mb-2">Community Challenge</h4>
+                    <p className="text-sm text-eco-700 mb-3">
+                      Plant 1,000 virtual trees together! 🌳
+                    </p>
+                    <div className="bg-white rounded-full h-3 mb-2">
+                      <div 
+                        className="bg-eco-gradient h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min((communityImpact / 1000) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-eco-600 font-medium">
+                      {communityImpact}/1000 trees planted
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
