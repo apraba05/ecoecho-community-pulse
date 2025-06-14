@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Mic, Send, X, Camera } from 'lucide-react';
+import { Upload, Mic, Send, X, Camera, Play, Pause } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface EcoActionInputProps {
@@ -18,13 +18,17 @@ interface EcoActionInputProps {
 const EcoActionInput: React.FC<EcoActionInputProps> = ({ onSubmit }) => {
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -37,7 +41,12 @@ const EcoActionInput: React.FC<EcoActionInputProps> = ({ onSubmit }) => {
         });
         return;
       }
+      
       setPhoto(file);
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setPhotoPreview(previewUrl);
+      
       toast({
         title: "Photo added!",
         description: "Your photo has been attached to this action."
@@ -59,6 +68,11 @@ const EcoActionInput: React.FC<EcoActionInputProps> = ({ onSubmit }) => {
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         setAudioBlob(audioBlob);
+        
+        // Create preview URL
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        
         stream.getTracks().forEach(track => track.stop());
         toast({
           title: "Recording complete!",
@@ -94,8 +108,24 @@ const EcoActionInput: React.FC<EcoActionInputProps> = ({ onSubmit }) => {
     }
   };
 
+  const playAudio = () => {
+    if (audioUrl && audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  };
+
   const removePhoto = () => {
     setPhoto(null);
+    if (photoPreview) {
+      URL.revokeObjectURL(photoPreview);
+      setPhotoPreview(null);
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -103,7 +133,12 @@ const EcoActionInput: React.FC<EcoActionInputProps> = ({ onSubmit }) => {
 
   const removeAudio = () => {
     setAudioBlob(null);
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
     setRecordingTime(0);
+    setIsPlaying(false);
   };
 
   const handleSubmit = () => {
@@ -127,6 +162,16 @@ const EcoActionInput: React.FC<EcoActionInputProps> = ({ onSubmit }) => {
     setPhoto(null);
     setAudioBlob(null);
     setRecordingTime(0);
+    setIsPlaying(false);
+    
+    if (photoPreview) {
+      URL.revokeObjectURL(photoPreview);
+      setPhotoPreview(null);
+    }
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -190,33 +235,72 @@ const EcoActionInput: React.FC<EcoActionInputProps> = ({ onSubmit }) => {
           </Button>
         </div>
 
-        {/* Attachments Preview */}
+        {/* Photo Preview */}
+        {photoPreview && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-gray-700">Photo Preview:</h4>
+            <div className="relative inline-block">
+              <img 
+                src={photoPreview} 
+                alt="Preview" 
+                className="max-w-48 max-h-32 object-cover rounded-lg border border-eco-200"
+              />
+              <button
+                onClick={removePhoto}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Audio Preview */}
+        {audioUrl && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-gray-700">Voice Note:</h4>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={playAudio}
+                className="border-eco-300 text-eco-700 hover:bg-eco-50"
+              >
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </Button>
+              <span className="text-sm text-gray-600">{formatTime(recordingTime)}</span>
+              <button
+                onClick={removeAudio}
+                className="ml-2 text-red-500 hover:text-red-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <audio
+              ref={audioRef}
+              src={audioUrl}
+              onEnded={() => setIsPlaying(false)}
+              className="hidden"
+            />
+          </div>
+        )}
+
+        {/* Attachments Summary */}
         {(photo || audioBlob) && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Attachments:</h4>
             <div className="flex gap-2 flex-wrap">
               {photo && (
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800 flex items-center gap-2">
-                  <Camera className="w-3 h-3" />
-                  {photo.name}
-                  <button
-                    onClick={removePhoto}
-                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  <Camera className="w-3 h-3 mr-1" />
+                  Photo attached
                 </Badge>
               )}
               {audioBlob && (
-                <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-2">
-                  <Mic className="w-3 h-3" />
+                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                  <Mic className="w-3 h-3 mr-1" />
                   Voice note ({formatTime(recordingTime)})
-                  <button
-                    onClick={removeAudio}
-                    className="ml-1 hover:bg-green-200 rounded-full p-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
                 </Badge>
               )}
             </div>

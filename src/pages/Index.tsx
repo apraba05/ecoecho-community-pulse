@@ -154,7 +154,11 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {ecoActions.length === 0 ? (
+                  {loading ? (
+                    <div className="text-center py-4 text-gray-500">
+                      Loading your eco actions...
+                    </div>
+                  ) : ecoActions.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <Leaf className="w-12 h-12 mx-auto mb-3 text-eco-300" />
                       <p>No actions logged yet. Start your journey!</p>
@@ -178,8 +182,26 @@ const Index = () => {
                               </Badge>
                             )}
                           </div>
+                          {/* Show attached media */}
+                          {action.photo_url && (
+                            <div className="mt-2">
+                              <img 
+                                src={action.photo_url} 
+                                alt="Eco action" 
+                                className="max-w-32 max-h-24 object-cover rounded border border-eco-200"
+                              />
+                            </div>
+                          )}
+                          {action.audio_url && (
+                            <div className="mt-2">
+                              <audio controls className="w-full max-w-64">
+                                <source src={action.audio_url} type="audio/wav" />
+                                Your browser does not support the audio element.
+                              </audio>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 ml-4">
                           <Badge className="bg-green-100 text-green-800">
                             eco
                           </Badge>

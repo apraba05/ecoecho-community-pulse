@@ -13,30 +13,36 @@ export type Database = {
         Row: {
           action_date: string
           action_description: string
+          audio_url: string | null
           created_at: string
           friend_invites: number | null
           id: string
           impact_score: number
+          photo_url: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           action_date?: string
           action_description: string
+          audio_url?: string | null
           created_at?: string
           friend_invites?: number | null
           id?: string
           impact_score?: number
+          photo_url?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           action_date?: string
           action_description?: string
+          audio_url?: string | null
           created_at?: string
           friend_invites?: number | null
           id?: string
           impact_score?: number
+          photo_url?: string | null
           updated_at?: string
           user_id?: string
         }

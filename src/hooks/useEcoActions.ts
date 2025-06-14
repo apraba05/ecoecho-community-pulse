@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EcoAction {
   id: string;
@@ -19,54 +21,89 @@ interface EcoActionInput {
 }
 
 export const useEcoActions = () => {
-  const [ecoActions, setEcoActions] = useState<EcoAction[]>([
-    {
-      id: '1',
-      action_description: 'Used public transport to work',
-      impact_score: 5,
-      action_date: '2024-06-14',
-      friend_invites: 0
-    },
-    {
-      id: '2',
-      action_description: 'Brought reusable water bottle',
-      impact_score: 3,
-      action_date: '2024-06-13',
-      friend_invites: 0
-    },
-    {
-      id: '3',
-      action_description: 'Recycled electronics properly',
-      impact_score: 8,
-      action_date: '2024-06-12',
-      friend_invites: 0
-    }
-  ]);
+  const { user } = useAuth();
+  const [ecoActions, setEcoActions] = useState<EcoAction[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const fetchEcoActions = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('eco_actions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setEcoActions(data || []);
+    } catch (error) {
+      console.error('Error fetching eco actions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load your eco actions.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uploadFile = async (file: File | Blob, bucket: string, fileName: string): Promise<string | null> => {
+    try {
+      const filePath = `${user?.id}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error(`Error uploading to ${bucket}:`, error);
+      return null;
+    }
+  };
+
   const addEcoAction = async (actionInput: EcoActionInput) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to log eco actions.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // In a real implementation, you would upload the photo and audio to storage
-      // For now, we'll create placeholder URLs
       let photoUrl: string | undefined;
       let audioUrl: string | undefined;
 
+      // Upload photo if provided
       if (actionInput.photo) {
-        // Create a temporary URL for preview
-        photoUrl = URL.createObjectURL(actionInput.photo);
-        console.log('Photo attached:', actionInput.photo.name);
+        const fileName = `photo_${Date.now()}.${actionInput.photo.name.split('.').pop()}`;
+        photoUrl = await uploadFile(actionInput.photo, 'eco-photos', fileName) || undefined;
+        console.log('Photo uploaded:', photoUrl);
       }
 
+      // Upload audio if provided
       if (actionInput.audioBlob) {
-        // Create a temporary URL for preview
-        audioUrl = URL.createObjectURL(actionInput.audioBlob);
-        console.log('Audio attached:', actionInput.audioBlob.size, 'bytes');
+        const fileName = `audio_${Date.now()}.webm`;
+        audioUrl = await uploadFile(actionInput.audioBlob, 'eco-audio', fileName) || undefined;
+        console.log('Audio uploaded:', audioUrl);
       }
 
-      const newAction: EcoAction = {
-        id: Date.now().toString(),
+      const newActionData = {
+        user_id: user.id,
         action_description: actionInput.description || 'Media attachment',
         impact_score: Math.floor(Math.random() * 5) + 1,
         action_date: new Date().toISOString().split('T')[0],
@@ -75,7 +112,16 @@ export const useEcoActions = () => {
         audio_url: audioUrl
       };
 
-      setEcoActions([newAction, ...ecoActions]);
+      const { data, error } = await supabase
+        .from('eco_actions')
+        .insert([newActionData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add to local state
+      setEcoActions([data, ...ecoActions]);
 
       let attachmentText = '';
       if (actionInput.photo && actionInput.audioBlob) {
@@ -88,7 +134,7 @@ export const useEcoActions = () => {
 
       toast({
         title: "Action logged!",
-        description: `You earned ${newAction.impact_score} eco points${attachmentText}!`,
+        description: `You earned ${data.impact_score} eco points${attachmentText}!`,
       });
     } catch (error) {
       console.error('Error adding eco action:', error);
@@ -102,9 +148,9 @@ export const useEcoActions = () => {
     }
   };
 
-  const fetchEcoActions = async () => {
-    // Mock function for now - data is already set in state
-  };
+  useEffect(() => {
+    fetchEcoActions();
+  }, [user]);
 
   return {
     ecoActions,
